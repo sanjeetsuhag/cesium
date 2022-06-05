@@ -27,11 +27,9 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Installs dependencies and builds
-        shell: cmd
         run: |
           npm i
           npm run build
       - name: Runs tests
-        shell: cmd
         run: |
           npm run test --failTaskOnError
