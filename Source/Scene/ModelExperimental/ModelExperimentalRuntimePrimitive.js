@@ -16,7 +16,7 @@ import MetadataPipelineStage from "./MetadataPipelineStage.js";
 import ModelExperimentalUtility from "./ModelExperimentalUtility.js";
 import MorphTargetsPipelineStage from "./MorphTargetsPipelineStage.js";
 import PickingPipelineStage from "./PickingPipelineStage.js";
-import PointCloudAttenuationPipelineStage from "./PointCloudAttenuationPipelineStage.js";
+import PointCloudStylingPipelineStage from "./PointCloudStylingPipelineStage.js";
 import PrimitiveOutlinePipelineStage from "./PrimitiveOutlinePipelineStage.js";
 import PrimitiveStatisticsPipelineStage from "./PrimitiveStatisticsPipelineStage.js";
 import SceneMode from "../SceneMode.js";
@@ -34,12 +34,12 @@ import WireframePipelineStage from "./WireframePipelineStage.js";
  * @param {ModelComponents.Node} options.node The node that this primitive belongs to.
  * @param {ModelExperimental} options.model The {@link ModelExperimental} this primitive belongs to.
  *
- * @alias ModelExperimentalPrimitive
+ * @alias ModelExperimentalRuntimePrimitive
  * @constructor
  *
  * @private
  */
-export default function ModelExperimentalPrimitive(options) {
+export default function ModelExperimentalRuntimePrimitive(options) {
   options = defaultValue(options, defaultValue.EMPTY_OBJECT);
 
   const primitive = options.primitive;
@@ -146,7 +146,9 @@ export default function ModelExperimentalPrimitive(options) {
  *
  * @private
  */
-ModelExperimentalPrimitive.prototype.configurePipeline = function (frameState) {
+ModelExperimentalRuntimePrimitive.prototype.configurePipeline = function (
+  frameState
+) {
   const pipelineStages = this.pipelineStages;
   pipelineStages.length = 0;
 
@@ -154,11 +156,13 @@ ModelExperimentalPrimitive.prototype.configurePipeline = function (frameState) {
   const node = this.node;
   const model = this.model;
   const customShader = model.customShader;
+  const style = model.style;
+
   const useWebgl2 = frameState.context.webgl2;
   const mode = frameState.mode;
-
   const use2D =
     mode !== SceneMode.SCENE3D && !frameState.scene3DOnly && model._projectTo2D;
+
   const hasMorphTargets =
     defined(primitive.morphTargets) && primitive.morphTargets.length > 0;
   const hasSkinning = defined(node.skin);
@@ -182,6 +186,10 @@ ModelExperimentalPrimitive.prototype.configurePipeline = function (frameState) {
   const pointCloudShading = model.pointCloudShading;
   const hasAttenuation =
     defined(pointCloudShading) && pointCloudShading.attenuation;
+  const hasPointCloudStyle =
+    primitive.primitiveType === PrimitiveType.POINTS &&
+    (defined(style) || hasAttenuation);
+
   const hasOutlines =
     model._enableShowOutline && defined(primitive.outlineCoordinates);
 
@@ -206,8 +214,8 @@ ModelExperimentalPrimitive.prototype.configurePipeline = function (frameState) {
     pipelineStages.push(SkinningPipelineStage);
   }
 
-  if (hasAttenuation && primitive.primitiveType === PrimitiveType.POINTS) {
-    pipelineStages.push(PointCloudAttenuationPipelineStage);
+  if (hasPointCloudStyle) {
+    pipelineStages.push(PointCloudStylingPipelineStage);
   }
 
   if (hasQuantization) {
